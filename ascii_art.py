@@ -28,6 +28,27 @@ def ascii_to_1_hot(ascii):
 
     return np.reshape(one_hot, (x, y, -1))
 
+def one_hot_to_ascii(one_hot):
+    # reshape array into 2D
+    x, y, z = one_hot.shape
+    reshaped = np.reshape(one_hot, (x*y, z))
+
+    # convert from 1 hot to ascii codes
+    codes = np.sum(np.reshape(np.arange(z), (-1, z)).transpose()*reshaped.transpose(), axis=0, dtype=np.int16)
+
+    # convert back to correct shape
+    codes = np.reshape(codes, (x, y))
+
+    # convert to a list of list of chars
+    chars = [[chr(num) for num in nums] for nums in codes]
+
+    # convert to a list of strings
+    strs = ["".join(row) for row in chars]
+
+    # join rows by newline
+    return "\n".join(strs)
+
+
 def main():
     data_dir = "Data/"
 
@@ -44,7 +65,7 @@ def main():
 
     # only take images with size (300, 300, 3)
     temp = zip(input_images, output_1_hot)
-    keep = [pair for pair in temp if pair[0].shape == (300,300,3)]
+    keep = [pair for pair in temp if pair[0].shape == (300, 300, 3)]
     input_images, output_1_hot = map(np.array, zip(*keep))
 
     # define network using functional API
@@ -54,13 +75,13 @@ def main():
     x = MaxPool2D()(x)
     x = Dropout(0.1)(x)
     x = BatchNormalization()(x)
-    x = Conv2D(32, (3, 3), activation='relu', padding='same')(x)
+    x = Conv2D(32, (3, 3), activation='relu', padding='same')(x) 
     x = Dropout(0.1)(x)
     x = BatchNormalization()(x)
-    x = Conv2D(64, (3, 3), activation='relu', padding='same')(x)
+    x = Conv2D(64, (3, 3), activation='relu', padding='same')(x) 
     x = Dropout(0.1)(x)
     x = BatchNormalization()(x)
-    outputs =  Conv2D(128, (3, 3), activation=lambda z: softmax(z, axis=2), padding='same')(x)
+    outputs = Conv2D(128, (3, 3), activation=lambda z: softmax(z, axis=2), padding='same')(x)
 
     # create model
     model = Model(input=inputs, output=outputs)
@@ -70,8 +91,6 @@ def main():
     
     # train model
     model.fit(input_images, output_1_hot, batch_size=5, epochs=10)
-
-
 
 if __name__ == "__main__":
     main()
