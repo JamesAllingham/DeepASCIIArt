@@ -9,7 +9,7 @@ from scipy.misc import imread
 
 from glob import glob
 
-def ascii_to_1_hot(ascii):
+def ascii_to_one_hot(ascii):
     # split ascii string by row
     rows = ascii.splitlines()
 
@@ -24,7 +24,7 @@ def ascii_to_1_hot(ascii):
     codes = np.hstack(codes)
 
     # convert to 1 hot
-    one_hot =  to_categorical(codes, num_classes=128)
+    one_hot = to_categorical(codes, num_classes=128)
 
     return np.reshape(one_hot, (x, y, -1))
 
@@ -34,7 +34,8 @@ def one_hot_to_ascii(one_hot):
     reshaped = np.reshape(one_hot, (x*y, z))
 
     # convert from 1 hot to ascii codes
-    codes = np.sum(np.reshape(np.arange(z), (-1, z)).transpose()*reshaped.transpose(), axis=0, dtype=np.int16)
+    # codes = np.sum(np.reshape(np.arange(z), (-1, z)).transpose()*reshaped.transpose(), axis=0, dtype=np.int16)
+    codes = np.argmax(reshaped, axis=1)
 
     # convert back to correct shape
     codes = np.reshape(codes, (x, y))
@@ -61,12 +62,12 @@ def main():
 
     # convert all of the output files to 1 hot encodings
     output_ascii_strings = [open(fname, 'r').read() for fname in output_files]
-    output_1_hot = np.array([ascii_to_1_hot(ascii) for ascii in output_ascii_strings])
+    output_one_hot = np.array([ascii_to_one_hot(ascii) for ascii in output_ascii_strings])
 
     # only take images with size (300, 300, 3)
-    temp = zip(input_images, output_1_hot)
+    temp = zip(input_images, output_one_hot)
     keep = [pair for pair in temp if pair[0].shape == (300, 300, 3)]
-    input_images, output_1_hot = map(np.array, zip(*keep))
+    input_images, output_one_hot = map(np.array, zip(*keep))
 
     # define network using functional API
     inputs = Input(shape=(300, 300, 3))
@@ -86,11 +87,18 @@ def main():
     # create model
     model = Model(input=inputs, output=outputs)
     model.compile(optimizer='adam',
-              loss='categorical_crossentropy',
-              metrics=['accuracy'])
+                  loss='categorical_crossentropy',
+                  metrics=['accuracy'])
     
     # train model
-    model.fit(input_images, output_1_hot, batch_size=5, epochs=10)
+    model.fit(input_images, output_one_hot, batch_size=5, epochs=10)
+
+    # test
+    test_image = np.array([np.float32(imread("test.jpg"))])
+    test = model.predict(test_image)[0]
+    test_ascii = one_hot_to_ascii(test)
+    
+    print(test_ascii)
 
 if __name__ == "__main__":
     main()
