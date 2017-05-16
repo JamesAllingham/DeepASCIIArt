@@ -9,6 +9,8 @@ from scipy.misc import imread
 
 from glob import glob
 
+from itertools import cycle, zip_longest
+
 def ascii_to_one_hot(ascii):
     # split ascii string by row
     rows = ascii.splitlines()
@@ -49,25 +51,44 @@ def one_hot_to_ascii(one_hot):
     # join rows by newline
     return "\n".join(strs)
 
+def grouper(n, iterable, fillvalue=None):
+    args = [iter(iterable)] * n
+    return zip_longest(*args, fillvalue=fillvalue)
+
+def generate_batches_from_directory(path, batch_size=10):
+    # get the paths for all of the input and output files
+    input_files = glob(path + "*.jpg")
+    output_files = glob(path + "*.ascii")
+    file_pairs = zip(input_files, output_files)
+    file_pairs_infinite = cycle(file_pairs)
+    file_pairs_grouped = grouper(batch_size, file_pairs_infinite)
+    
+    # loop infinitely    
+    while 1:        
+        input_files, output_files = zip(*next(file_pairs_grouped)) 
+
+        # read the input files as images
+        input_images = [np.float32(imread(fname)) for fname in input_files]
+
+        # convert all of the output files to 1 hot encodings
+        output_ascii_strings = [open(fname, 'r').read() for fname in output_files]
+        output_one_hot = np.array([ascii_to_one_hot(ascii) for ascii in output_ascii_strings])
+
+        # only take images with size (300, 300, 3)
+        temp = zip(input_images, output_one_hot)
+        keep = [pair for pair in temp if pair[0].shape == (300, 300, 3)]
+
+        # if there isn't anything to return then go to the next iteration
+        if len(keep) == 0: continue
+
+        # convert to numpy arrays
+        input_images, output_one_hot = map(np.array, zip(*keep))
+
+        yield input_images, output_one_hot
+
 
 def main():
     data_dir = "Data/"
-
-    # get the paths for all of the input and output files
-    input_files = glob(data_dir + "*.jpg")[:200]
-    output_files = glob(data_dir + "*.ascii")[:200]
-
-    # read the input files as images
-    input_images = [np.float32(imread(fname)) for fname in input_files]
-
-    # convert all of the output files to 1 hot encodings
-    output_ascii_strings = [open(fname, 'r').read() for fname in output_files]
-    output_one_hot = np.array([ascii_to_one_hot(ascii) for ascii in output_ascii_strings])
-
-    # only take images with size (300, 300, 3)
-    temp = zip(input_images, output_one_hot)
-    keep = [pair for pair in temp if pair[0].shape == (300, 300, 3)]
-    input_images, output_one_hot = map(np.array, zip(*keep))
 
     # define network using functional API
     inputs = Input(shape=(300, 300, 3))
@@ -96,11 +117,10 @@ def main():
                   metrics=['accuracy'])
     
     # train model
-    # TO DO: write a data generator so that the input and output data can be loaded in a lazy fashion from the directory
     # TO DO: create validation set and use to evaluate the training progress
     # TO DO: add callbacks for early stopping, learning rate annealing, tensorbard 
     # TO DO: save model on completion of training
-    model.fit(input_images, output_one_hot, batch_size=5, epochs=20)
+    model.fit_generator(generate_batches_from_directory(data_dir, batch_size=10), steps_per_epoch=10, epochs=20)
 
     # test
 
@@ -113,4 +133,5 @@ def main():
     print(test_ascii)
 
 if __name__ == "__main__":
+    # To DO: add commandline args for any hyper-params such as batch size
     main()
