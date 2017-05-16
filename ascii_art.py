@@ -1,6 +1,6 @@
 import keras
 from keras.models import Model
-from keras.layers import Conv2D, BatchNormalization, Dropout, Input, Flatten, Dense, Activation, MaxPool2D
+from keras.layers import Conv2D, BatchNormalization, Dropout, Input, MaxPool2D
 from keras.activations import softmax
 from keras.utils import to_categorical
 
@@ -54,8 +54,8 @@ def main():
     data_dir = "Data/"
 
     # get the paths for all of the input and output files
-    input_files = glob(data_dir + "*.jpg")[:100]
-    output_files = glob(data_dir + "*.ascii")[:100]
+    input_files = glob(data_dir + "*.jpg")[:200]
+    output_files = glob(data_dir + "*.ascii")[:200]
 
     # read the input files as images
     input_images = [np.float32(imread(fname)) for fname in input_files]
@@ -71,29 +71,41 @@ def main():
 
     # define network using functional API
     inputs = Input(shape=(300, 300, 3))
-    x = BatchNormalization()(inputs)
+    x = Dropout(0.1)(inputs)
+    x = BatchNormalization()(x)
     x = Conv2D(16, (3, 3), activation='relu', padding='same')(x)
     x = MaxPool2D()(x)
-    x = Dropout(0.1)(x)
+    x = Dropout(0.2)(x)
     x = BatchNormalization()(x)
     x = Conv2D(32, (3, 3), activation='relu', padding='same')(x) 
-    x = Dropout(0.1)(x)
+    x = MaxPool2D(pool_size=(2, 1))(x)
+    x = Dropout(0.2)(x)
     x = BatchNormalization()(x)
     x = Conv2D(64, (3, 3), activation='relu', padding='same')(x) 
-    x = Dropout(0.1)(x)
+    x = Dropout(0.2)(x)
+    x = BatchNormalization()(x)
+    x = Conv2D(128, (3, 3), activation='relu', padding='same')(x) 
+    x = Dropout(0.2)(x)
     x = BatchNormalization()(x)
     outputs = Conv2D(128, (3, 3), activation=lambda z: softmax(z, axis=2), padding='same')(x)
 
     # create model
-    model = Model(input=inputs, output=outputs)
+    model = Model(inputs=inputs, outputs=outputs)
     model.compile(optimizer='adam',
                   loss='categorical_crossentropy',
                   metrics=['accuracy'])
     
     # train model
-    model.fit(input_images, output_one_hot, batch_size=5, epochs=10)
+    # TO DO: write a data generator so that the input and output data can be loaded in a lazy fashion from the directory
+    # TO DO: create validation set and use to evaluate the training progress
+    # TO DO: add callbacks for early stopping, learning rate annealing, tensorbard 
+    # TO DO: save model on completion of training
+    model.fit(input_images, output_one_hot, batch_size=5, epochs=20)
 
     # test
+
+    # TO DO: create test set
+    # TO DO: get proper test metrics such as accuracy, loss
     test_image = np.array([np.float32(imread("test.jpg"))])
     test = model.predict(test_image)[0]
     test_ascii = one_hot_to_ascii(test)

@@ -18,8 +18,9 @@ def main():
     # for each JPEG run the jp2a utility to convert it to ASCII pic with width = height = 100
     for i, input_file in enumerate(input_files):
         with open(data_dir + "%s.ascii" % i, 'w') as ofile:
-            call(['jp2a', input_file, "--size=150x150", "--background=light"], stdout=ofile)
+            call(['jp2a', input_file, "--size=150x75", "--background=light"], stdout=ofile)
 
 
 if __name__ == "__main__":
+    # TO DO: make the source destination for the data a commandline arg
     main()
