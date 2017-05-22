@@ -117,14 +117,12 @@ def main():
                   metrics=['accuracy'])
     
     # train model
-    # TO DO: create validation set and use to evaluate the training progress
-    # TO DO: add callbacks for early stopping, learning rate annealing, tensorbard 
+    # TO DO: add callbacks for early stopping, learning rate annealing, tensorbard, saving model checkpoints
     # TO DO: save model on completion of training
-    model.fit_generator(generate_batches_from_directory(data_dir, batch_size=10), steps_per_epoch=10, epochs=20)
+    model.fit_generator(generate_batches_from_directory(data_dir + "train/", batch_size=10), steps_per_epoch=10, epochs=20, 
+     validation_data=generate_batches_from_directory(data_dir + "valid/", batch_size=10), validation_steps=10)
 
     # test
-
-    # TO DO: create test set
     # TO DO: get proper test metrics such as accuracy, loss
     test_image = np.array([np.float32(imread("test.jpg"))])
     test = model.predict(test_image)[0]
