@@ -138,7 +138,8 @@ def main(data_dir, batch_size, steps_per_epoch, num_epochs, image_size):
                         ])
 
     # test
-    # TO DO: get proper test metrics such as accuracy, loss
+    model.evaluate_generator(generate_batches_from_directory(data_dir + "test/", batch_size=10), steps=steps_per_epoch*num_epochs)
+
     test_image = np.array([np.float32(imread("test.jpg"))])
     test = model.predict(test_image)[0]
     test_ascii = one_hot_to_ascii(test)
