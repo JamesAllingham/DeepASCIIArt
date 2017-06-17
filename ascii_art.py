@@ -12,6 +12,7 @@ from keras.models import Model
 from keras.layers import Conv2D, BatchNormalization, Dropout, Input, MaxPool2D
 from keras.activations import softmax
 from keras.utils import to_categorical
+from keras.callbacks import TensorBoard, EarlyStopping, ModelCheckpoint, ReduceLROnPlateau
 
 import numpy as np
 from scipy.misc import imread
@@ -127,10 +128,14 @@ def main(data_dir, batch_size, image_size):
                   metrics=['accuracy'])
     
     # train model
-    # TO DO: add callbacks for early stopping, learning rate annealing, tensorbard, saving model checkpoints
-    # TO DO: save model on completion of training
-    model.fit_generator(generate_batches_from_directory(data_dir + "train/", batch_size=batch_size), steps_per_epoch=20, epochs=10, 
-     validation_data=generate_batches_from_directory(data_dir + "valid/", batch_size=batch_size), validation_steps=20)
+    model.fit_generator(generate_batches_from_directory(data_dir + "train/", batch_size=batch_size), steps_per_epoch=100, epochs=100, 
+                        validation_data=generate_batches_from_directory(data_dir + "valid/", batch_size=batch_size), validation_steps=20,
+                        callbacks=[
+                            TensorBoard(log_dir='./logs'),
+                            ReduceLROnPlateau(monitor='val_loss', factor=0.1, patience=10, mode='auto', epsilon=1e-4, cooldown=5, min_lr=0),
+                            ModelCheckpoint(filepath="Models/weights.{epoch:02d}-{val_loss:.2f}.hdf5", monitor='val_loss', save_best_only=True),
+                            EarlyStopping(monitor='val_loss', min_delta=0, patience=20)
+                        ])
 
     # test
     # TO DO: get proper test metrics such as accuracy, loss
