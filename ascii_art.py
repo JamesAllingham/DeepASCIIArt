@@ -129,8 +129,8 @@ def main(data_dir, batch_size, image_size):
     # train model
     # TO DO: add callbacks for early stopping, learning rate annealing, tensorbard, saving model checkpoints
     # TO DO: save model on completion of training
-    model.fit_generator(generate_batches_from_directory(data_dir + "train/", batch_size=5), steps_per_epoch=20, epochs=10, 
-     validation_data=generate_batches_from_directory(data_dir + "valid/", batch_size=5), validation_steps=20)
+    model.fit_generator(generate_batches_from_directory(data_dir + "train/", batch_size=batch_size), steps_per_epoch=20, epochs=10, 
+     validation_data=generate_batches_from_directory(data_dir + "valid/", batch_size=batch_size), validation_steps=20)
 
     # test
     # TO DO: get proper test metrics such as accuracy, loss
@@ -142,9 +142,9 @@ def main(data_dir, batch_size, image_size):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Trains a model to convert JPG images to ASCII art.')
-    parser.add_argument('--batch_size', metavar='B', default=32, 
+    parser.add_argument('--batch_size', metavar='B', default=5, 
                         help="""Specify the batch size. 
-                        The default is 32""")
+                        The default is 5""")
     parser.add_argument('--data_dir', metavar='D', default="Data/", 
                         help="""Specify the directory where the input and output files can be found. 
                         The directory should contain data_dir/test/, data_dir/train/, and data_dir/valid/. 
