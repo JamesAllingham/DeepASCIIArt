@@ -93,7 +93,7 @@ def generate_batches_from_directory(path, batch_size=10):
         yield input_images, output_one_hot
 
 
-def main(data_dir, batch_size, image_size):
+def main(data_dir, batch_size, steps_per_epoch, num_epochs, image_size):
     if not os.path.exists(data_dir):
         print("data_dir {} does not exist.".format(data_dir))
         exit(1)
@@ -128,8 +128,8 @@ def main(data_dir, batch_size, image_size):
                   metrics=['accuracy'])
     
     # train model
-    model.fit_generator(generate_batches_from_directory(data_dir + "train/", batch_size=batch_size), steps_per_epoch=100, epochs=100, 
-                        validation_data=generate_batches_from_directory(data_dir + "valid/", batch_size=batch_size), validation_steps=20,
+    model.fit_generator(generate_batches_from_directory(data_dir + "train/", batch_size=batch_size), steps_per_epoch=steps_per_epoch, epochs=num_epochs, 
+                        validation_data=generate_batches_from_directory(data_dir + "valid/", batch_size=batch_size), validation_steps=steps_per_epoch,
                         callbacks=[
                             TensorBoard(log_dir='./logs'),
                             ReduceLROnPlateau(monitor='val_loss', factor=0.1, patience=10, mode='auto', epsilon=1e-4, cooldown=5, min_lr=0),
@@ -150,6 +150,12 @@ if __name__ == "__main__":
     parser.add_argument('--batch_size', metavar='B', default=5, 
                         help="""Specify the batch size. 
                         The default is 5""")
+    parser.add_argument('--steps_per_epoch', metavar='E', default=100, 
+                        help="""Specify the number of training steps per peoch. 
+                        The default is 100""")
+    parser.add_argument('--num_epochs', metavar='N', default=10, 
+                        help="""Specify the number of epochs of training to run. 
+                        The default is 10""")
     parser.add_argument('--data_dir', metavar='D', default="Data/", 
                         help="""Specify the directory where the input and output files can be found. 
                         The directory should contain data_dir/test/, data_dir/train/, and data_dir/valid/. 
@@ -158,4 +164,4 @@ if __name__ == "__main__":
                         help="""Specify the dimensions of the SxS input images. 
                         The default is 300x300.""")
     args = parser.parse_args()
-    main(args.data_dir, args.batch_size, args.image_size)
+    main(args.data_dir, args.batch_size, args.steps_per_epoch, args.num_epochs, args.image_size)
