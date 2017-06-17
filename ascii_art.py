@@ -1,3 +1,8 @@
+from itertools import cycle, zip_longest
+from glob import glob
+import os
+import argparse
+
 import keras
 from keras.models import Model
 from keras.layers import Conv2D, BatchNormalization, Dropout, Input, MaxPool2D
@@ -6,10 +11,6 @@ from keras.utils import to_categorical
 
 import numpy as np
 from scipy.misc import imread
-
-from glob import glob
-
-from itertools import cycle, zip_longest
 
 def ascii_to_one_hot(ascii):
     # split ascii string by row
@@ -87,11 +88,13 @@ def generate_batches_from_directory(path, batch_size=10):
         yield input_images, output_one_hot
 
 
-def main():
-    data_dir = "Data/"
+def main(data_dir, batch_size, image_size):
+    if not os.path.exists(data_dir):
+        print("data_dir {} does not exist.".format(data_dir))
+        exit(1)
 
     # define network using functional API
-    inputs = Input(shape=(300, 300, 3))
+    inputs = Input(shape=(image_size, image_size, 3))
     x = Dropout(0.1)(inputs)
     x = BatchNormalization()(x)
     x = Conv2D(16, (3, 3), activation='relu', padding='same')(x)
@@ -108,6 +111,9 @@ def main():
     x = Conv2D(128, (3, 3), activation='relu', padding='same')(x) 
     x = Dropout(0.2)(x)
     x = BatchNormalization()(x)
+    x = Conv2D(128, (3, 3), activation='relu', padding='same')(x) 
+    x = Dropout(0.2)(x)
+    x = BatchNormalization()(x)
     outputs = Conv2D(128, (3, 3), activation=lambda z: softmax(z, axis=2), padding='same')(x)
 
     # create model
@@ -119,8 +125,8 @@ def main():
     # train model
     # TO DO: add callbacks for early stopping, learning rate annealing, tensorbard, saving model checkpoints
     # TO DO: save model on completion of training
-    model.fit_generator(generate_batches_from_directory(data_dir + "train/", batch_size=10), steps_per_epoch=10, epochs=20, 
-     validation_data=generate_batches_from_directory(data_dir + "valid/", batch_size=10), validation_steps=10)
+    model.fit_generator(generate_batches_from_directory(data_dir + "train/", batch_size=5), steps_per_epoch=20, epochs=10, 
+     validation_data=generate_batches_from_directory(data_dir + "valid/", batch_size=5), validation_steps=20)
 
     # test
     # TO DO: get proper test metrics such as accuracy, loss
@@ -131,5 +137,16 @@ def main():
     print(test_ascii)
 
 if __name__ == "__main__":
-    # To DO: add commandline args for any hyper-params such as batch size
-    main()
+    parser = argparse.ArgumentParser(description='Trains a model to convert JPG images to ASCII art.')
+    parser.add_argument('--batch_size', metavar='B', default=32, 
+                        help="""Specify the batch size. 
+                        The default is 32""")
+    parser.add_argument('--data_dir', metavar='D', default="Data/", 
+                        help="""Specify the directory where the input and output files can be found. 
+                        The directory should contain data_dir/test/, data_dir/train/, and data_dir/valid/. 
+                        The default is 'Data/'""")
+    parser.add_argument('--image_size', metavar='S', default=300, 
+                        help="""Specify the dimensions of the SxS input images. 
+                        The default is 300x300.""")
+    args = parser.parse_args()
+    main(args.data_dir, args.batch_size, args.image_size)
