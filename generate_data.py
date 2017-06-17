@@ -4,6 +4,7 @@ from random import random, seed
 import os
 import argparse
 from scipy.misc import imread, imsave
+from skimage.transform import resize
 import numpy as np
 
 def main(data_dir, size):
@@ -26,15 +27,15 @@ def main(data_dir, size):
     # for each JPEG crop the image to get a square
     cropped_files = []
     for i, fname in enumerate(input_files):
-        img = np.float32(imread(fname, mode='RGB'))
-        img = img[:size, :size, :]
+        img = imread(fname, mode='RGB')
+        img = resize(img, (300, 300, 3))
         imsave(data_dir + split[i] + "%s.jpg" % i, img)
         cropped_files.append("%s.jpg" % i)
 
     # for each cropped image run the jp2a utility to convert it to ASCII pic with width = height = 100
     for i, input_file in enumerate(cropped_files):
         with open(data_dir + split[i] + "%s.ascii" % i, 'w') as ofile:
-            call(['jp2a', input_file, "--size=150x75", "--background=light"], stdout=ofile)
+            call(['jp2a', data_dir + split[i] + input_file, "--size=150x75", "--background=light"], stdout=ofile)
 
 
 if __name__ == "__main__":
