@@ -1,3 +1,7 @@
+# Train a neural network to convert JPG images to ASCII
+# Author: James Allingham
+# Date: 12/05/17
+
 from itertools import cycle, zip_longest
 from glob import glob
 import os

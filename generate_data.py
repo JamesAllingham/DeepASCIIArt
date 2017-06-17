@@ -1,3 +1,7 @@
+# Process JPGs to create training data for JPG -> ASCII art neural network
+# Author: James Allingham
+# Date: 12/05/17
+
 from glob import glob
 from subprocess import call
 from random import random, seed
